@@ -6,9 +6,13 @@
  */
 
 #include "ThemeManager.h"
+#include <QSettings>
 
 // 单例初始化
 ThemeManager *ThemeManager::s_instance = nullptr;
+
+// QSettings 键名
+static const char *KEY_THEME = "app/theme";
 
 // ==================== 单例 ====================
 
@@ -24,6 +28,10 @@ ThemeManager::ThemeManager(QObject *parent)
     : QObject(parent)
     , m_currentTheme(Dark)  // 默认暗色
 {
+    // 从系统注册表/配置文件中恢复用户上次选择的主题
+    QSettings settings("ClipboardHistory", "ClipboardHistory");
+    int savedTheme = settings.value(KEY_THEME, Dark).toInt();
+    m_currentTheme = static_cast<Theme>(savedTheme);
 }
 
 // ==================== 主题切换 ====================
@@ -33,6 +41,10 @@ void ThemeManager::setTheme(Theme theme)
     if (m_currentTheme == theme) {
         return;  // 相同主题，无需切换
     }
+
+    // 持久化用户选择
+    QSettings settings("ClipboardHistory", "ClipboardHistory");
+    settings.setValue(KEY_THEME, static_cast<int>(theme));
 
     m_currentTheme = theme;
     emit themeChanged(theme);
