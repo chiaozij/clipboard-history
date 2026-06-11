@@ -1,0 +1,30 @@
+# 构建产物
+build/
+*.exe
+*.dll
+*.obj
+*.o
+*.a
+
+# Qt 自动生成
+moc_*
+ui_*
+qrc_*
+*_autogen/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.pro.user
+
+# 系统文件
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Claude 本地配置
+.claude/
+
+# 计划文件
+plan.md

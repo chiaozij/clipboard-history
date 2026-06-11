@@ -1,0 +1,10 @@
+<!--
+  Qt 资源文件 (Qt Resource Collection)
+  定义应用中使用的图标、字体等静态资源。
+  编译时这些文件会被嵌入到可执行文件中，无需额外携带。
+-->
+<RCC>
+    <qresource prefix="/">
+        <file>icons/clip.png</file>
+    </qresource>
+</RCC>
