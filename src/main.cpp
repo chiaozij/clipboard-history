@@ -24,6 +24,7 @@
 #include "ClipboardManager.h"
 #include "HistoryPanel.h"
 #include "TrayManager.h"
+#include "ThemeManager.h"
 
 /**
  * @brief 应用入口
@@ -49,45 +50,13 @@ int main(int argc, char *argv[])
     app.setOrganizationName("ClipboardHistory");
     app.setQuitOnLastWindowClosed(false);  // 关闭面板不退出应用，托盘常驻
 
-    // ==================== 2. 全局样式表（暗色主题，Win11 风格） ====================
+    // ==================== 2. 全局样式表（由 ThemeManager 管理） ====================
     app.setStyleSheet(
-        // 通用字体和基础颜色
+        // 通用字体
         "* {"
         "  font-family: 'Microsoft YaHei', 'Segoe UI', 'PingFang SC', sans-serif;"
         "}"
-
-        // 工具提示样式（toast 提示）
-        "QToolTip {"
-        "  background: #1A1A1A;"
-        "  color: #E8E8E8;"
-        "  border: 1px solid rgba(255,255,255,0.15);"
-        "  border-radius: 8px;"
-        "  padding: 8px 14px;"
-        "  font-size: 12px;"
-        "}"
-
-        // 滚动条全局样式（细滚动条）
-        "QScrollBar:vertical {"
-        "  background: transparent;"
-        "  width: 6px;"
-        "  margin: 0;"
-        "}"
-        "QScrollBar::handle:vertical {"
-        "  background: rgba(255,255,255,0.15);"
-        "  border-radius: 3px;"
-        "  min-height: 30px;"
-        "}"
-        "QScrollBar::handle:vertical:hover {"
-        "  background: rgba(255,255,255,0.25);"
-        "}"
-        "QScrollBar::add-line:vertical,"
-        "QScrollBar::sub-line:vertical {"
-        "  height: 0px;"
-        "}"
-        "QScrollBar::add-page:vertical,"
-        "QScrollBar::sub-page:vertical {"
-        "  background: none;"
-        "}"
+        + ThemeManager::instance()->globalStyleSheet()
     );
 
     // ==================== 3. 创建核心组件 ====================

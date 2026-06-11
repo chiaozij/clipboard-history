@@ -51,6 +51,7 @@ set(SOURCES
     src/ClipboardManager.cpp
     src/HistoryItemWidget.cpp
     src/HistoryPanel.cpp
+    src/ThemeManager.cpp
     src/TrayManager.cpp
 )
 

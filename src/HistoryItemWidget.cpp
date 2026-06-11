@@ -20,6 +20,7 @@
 #include <QClipboard>
 #include <QToolTip>
 #include <QAbstractButton>
+#include "ThemeManager.h"
 
 // ==================== 构造 & 析构 ====================
 
@@ -47,6 +48,14 @@ HistoryItemWidget::HistoryItemWidget(const ClipboardItem &item,
     connect(deleteAction, &QAction::triggered,
             this, &HistoryItemWidget::onDeleteActionTriggered);
 
+    // 为右键菜单应用主题样式
+    m_contextMenu->setStyleSheet(ThemeManager::instance()->menuStyle());
+
+    // 每次菜单弹出前刷新样式（确保主题切换后也正确）
+    connect(m_contextMenu, &QMenu::aboutToShow, this, [this]() {
+        m_contextMenu->setStyleSheet(ThemeManager::instance()->menuStyle());
+    });
+
     // 设置鼠标追踪，用于 hover 效果
     setMouseTracking(true);
 }
@@ -59,14 +68,8 @@ void HistoryItemWidget::setupUi(const ClipboardItem &item)
     setFixedHeight(56);
     setFrameShape(QFrame::NoFrame);
     setStyleSheet(
-        "HistoryItemWidget {"
-        "  background: rgba(255, 255, 255, 0.06);"
-        "  border-radius: 8px;"
-        "  margin: 2px 8px;"
-        "}"
-        "HistoryItemWidget:hover {"
-        "  background: rgba(255, 255, 255, 0.15);"
-        "}"
+        ThemeManager::instance()->cardNormalStyle()
+        + ThemeManager::instance()->cardHoverStyle()
     );
     setCursor(Qt::PointingHandCursor);
 
@@ -78,12 +81,7 @@ void HistoryItemWidget::setupUi(const ClipboardItem &item)
     // ── 左侧：图标/缩略图 ──
     m_iconLabel->setFixedSize(40, 40);
     m_iconLabel->setAlignment(Qt::AlignCenter);
-    m_iconLabel->setStyleSheet(
-        "QLabel {"
-        "  background: rgba(255,255,255,0.08);"
-        "  border-radius: 6px;"
-        "}"
-    );
+    m_iconLabel->setStyleSheet(ThemeManager::instance()->cardIconStyle());
     setTypeIcon(item);
 
     // ── 中间：预览文本 + 时间 ──
@@ -93,7 +91,7 @@ void HistoryItemWidget::setupUi(const ClipboardItem &item)
     m_previewLabel->setText(item.previewText(80));
     m_previewLabel->setStyleSheet(
         "QLabel {"
-        "  color: #E8E8E8;"
+        "  color: " + ThemeManager::instance()->cardTextColor() + ";"
         "  font-size: 13px;"
         "  font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;"
         "}"
@@ -106,7 +104,7 @@ void HistoryItemWidget::setupUi(const ClipboardItem &item)
     m_timeLabel->setText(formatTimestamp(item.timestamp()));
     m_timeLabel->setStyleSheet(
         "QLabel {"
-        "  color: #888;"
+        "  color: " + ThemeManager::instance()->cardTimeColor() + ";"
         "  font-size: 11px;"
         "  font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;"
         "}"
@@ -121,15 +119,8 @@ void HistoryItemWidget::setupUi(const ClipboardItem &item)
     m_copyBtn->setCursor(Qt::PointingHandCursor);
     m_copyBtn->setToolTip("复制到剪贴板");
     m_copyBtn->setStyleSheet(
-        "QPushButton {"
-        "  background: rgba(255,255,255,0.08);"
-        "  border: none;"
-        "  border-radius: 6px;"
-        "  font-size: 16px;"
-        "}"
-        "QPushButton:hover {"
-        "  background: rgba(255,255,255,0.2);"
-        "}"
+        ThemeManager::instance()->cardCopyBtnStyle()
+        + ThemeManager::instance()->cardCopyBtnHoverStyle()
     );
     connect(m_copyBtn, &QPushButton::clicked,
             this, &HistoryItemWidget::onCopyClicked);
@@ -159,11 +150,8 @@ void HistoryItemWidget::setTypeIcon(const ClipboardItem &item)
     // 文本类型：显示文本图标
     m_iconLabel->setText("📝");
     m_iconLabel->setStyleSheet(
-        "QLabel {"
-        "  background: rgba(255,255,255,0.08);"
-        "  border-radius: 6px;"
-        "  font-size: 20px;"
-        "}"
+        ThemeManager::instance()->cardIconStyle()
+        + "font-size: 20px;"
     );
 }
 
@@ -251,28 +239,8 @@ void HistoryItemWidget::onDeleteActionTriggered()
     msgBox.button(QMessageBox::Yes)->setText("删除");
     msgBox.button(QMessageBox::No)->setText("取消");
 
-    // 设置对话框样式，与整体 UI 风格保持一致
-    msgBox.setStyleSheet(
-        "QMessageBox {"
-        "  background-color: #2D2D2D;"
-        "  color: #E8E8E8;"
-        "  font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;"
-        "}"
-        "QMessageBox QLabel {"
-        "  color: #E8E8E8;"
-        "}"
-        "QPushButton {"
-        "  background: rgba(255,255,255,0.1);"
-        "  border: 1px solid rgba(255,255,255,0.15);"
-        "  border-radius: 6px;"
-        "  padding: 6px 20px;"
-        "  color: #E8E8E8;"
-        "  font-size: 13px;"
-        "}"
-        "QPushButton:hover {"
-        "  background: rgba(255,255,255,0.2);"
-        "}"
-    );
+    // 设置对话框样式，与当前主题一致
+    msgBox.setStyleSheet(ThemeManager::instance()->dialogStyle());
 
     int ret = msgBox.exec();
 

@@ -13,6 +13,7 @@
 
 #include "HistoryPanel.h"
 #include "HistoryItemWidget.h"
+#include "ThemeManager.h"
 
 #include <QScreen>
 #include <QGuiApplication>
@@ -25,6 +26,7 @@
 #include <QShowEvent>
 #include <QPaintEvent>
 #include <QResizeEvent>
+#include <QRegularExpression>
 
 // Windows DWM API（毛玻璃效果需要）
 #ifdef Q_OS_WIN
@@ -71,21 +73,7 @@ HistoryPanel::HistoryPanel(ClipboardManager *clipboardManager,
     // --- 搜索框 ---
     m_searchBox->setPlaceholderText("🔍  搜索历史记录...");
     m_searchBox->setClearButtonEnabled(true);
-    m_searchBox->setStyleSheet(
-        "QLineEdit {"
-        "  background: rgba(255, 255, 255, 0.10);"
-        "  border: 1px solid rgba(255, 255, 255, 0.12);"
-        "  border-radius: 10px;"
-        "  padding: 9px 12px;"
-        "  color: #E8E8E8;"
-        "  font-size: 13px;"
-        "  font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;"
-        "}"
-        "QLineEdit:focus {"
-        "  background: rgba(255, 255, 255, 0.15);"
-        "  border-color: rgba(255, 255, 255, 0.3);"
-        "}"
-    );
+    m_searchBox->setStyleSheet(ThemeManager::instance()->searchBoxStyle());
     connect(m_searchBox, &QLineEdit::textChanged,
             this, &HistoryPanel::onSearchTextChanged);
 
@@ -99,18 +87,6 @@ HistoryPanel::HistoryPanel(ClipboardManager *clipboardManager,
         "  background: transparent;"
         "  border: none;"
         "}"
-        "QScrollBar:vertical {"
-        "  background: transparent;"
-        "  width: 6px;"
-        "}"
-        "QScrollBar::handle:vertical {"
-        "  background: rgba(255,255,255,0.2);"
-        "  border-radius: 3px;"
-        "  min-height: 30px;"
-        "}"
-        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {"
-        "  height: 0px;"
-        "}"
     );
 
     // 列表容器
@@ -123,14 +99,7 @@ HistoryPanel::HistoryPanel(ClipboardManager *clipboardManager,
 
     // --- 状态标签（无记录时显示） ---
     m_statusLabel->setAlignment(Qt::AlignCenter);
-    m_statusLabel->setStyleSheet(
-        "QLabel {"
-        "  color: #777;"
-        "  font-size: 13px;"
-        "  font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;"
-        "  padding: 30px 0;"
-        "}"
-    );
+    m_statusLabel->setStyleSheet(ThemeManager::instance()->statusLabelStyle());
 
     // --- 组装 ---
     mainLayout->addWidget(m_searchBox);
@@ -140,6 +109,15 @@ HistoryPanel::HistoryPanel(ClipboardManager *clipboardManager,
     // ===== 连接数据源信号 =====
     connect(m_clipboardManager, &ClipboardManager::historyChanged,
             this, &HistoryPanel::refreshList);
+
+    // ===== 监听主题切换，刷新样式 =====
+    connect(ThemeManager::instance(), &ThemeManager::themeChanged,
+            this, [this](ThemeManager::Theme) {
+        m_searchBox->setStyleSheet(ThemeManager::instance()->searchBoxStyle());
+        m_statusLabel->setStyleSheet(ThemeManager::instance()->statusLabelStyle());
+        enableAcrylicBackground();
+        update();  // 重绘面板背景
+    });
 
     // ===== 初次加载列表 =====
     refreshList();
@@ -390,18 +368,45 @@ void HistoryPanel::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // 绘制圆角矩形背景
+    // 绘制圆角矩形背景 — 颜色来自 ThemeManager
     QPainterPath path;
     path.addRoundedRect(rect(), 12, 12);
 
-    // 半透明深色背景（毛玻璃退化方案 / 叠加层）
-    painter.setBrush(QColor(32, 32, 32, 235));
+    // 解析主题背景颜色（格式: "rgba(r, g, b, a)"）
+    QString bgStr = ThemeManager::instance()->panelBackgroundColor();
+    QColor bgColor;
+    // 简单解析 rgba(r,g,b,a) 格式
+    QRegularExpression re("rgba\\((\\d+),\\s*(\\d+),\\s*(\\d+),\\s*(\\d+)\\)");
+    QRegularExpressionMatch m = re.match(bgStr);
+    if (m.hasMatch()) {
+        bgColor = QColor(m.captured(1).toInt(),
+                         m.captured(2).toInt(),
+                         m.captured(3).toInt(),
+                         m.captured(4).toInt());
+    } else {
+        bgColor = QColor(32, 32, 32, 235);  // 退化
+    }
+
+    painter.setBrush(bgColor);
     painter.setPen(Qt::NoPen);
     painter.drawPath(path);
 
-    // 绘制 1px 的微亮边框
+    // 绘制 1px 边框
     painter.setBrush(Qt::NoBrush);
-    QPen borderPen(QColor(255, 255, 255, 30));
+    QString borderStr = ThemeManager::instance()->panelBorderColor();
+    QColor borderColor;
+    QRegularExpression re2("rgba\\((\\d+),\\s*(\\d+),\\s*(\\d+),\\s*(\\d+)\\)");
+    QRegularExpressionMatch m2 = re2.match(borderStr);
+    if (m2.hasMatch()) {
+        borderColor = QColor(m2.captured(1).toInt(),
+                             m2.captured(2).toInt(),
+                             m2.captured(3).toInt(),
+                             m2.captured(4).toInt());
+    } else {
+        borderColor = QColor(255, 255, 255, 30);
+    }
+
+    QPen borderPen(borderColor);
     borderPen.setWidth(1);
     painter.setPen(borderPen);
     painter.drawRoundedRect(rect().adjusted(0, 0, -1, -1), 12, 12);
@@ -434,8 +439,8 @@ void HistoryPanel::enableAcrylicBackground()
                           &DWM_SYSTEMBACKDROP_ACRYLIC,
                           sizeof(int));
 
-    // 方式 3：暗色模式适配
-    BOOL useDarkMode = TRUE;
+    // 方式 3：暗色/亮色模式适配（跟随主题）
+    BOOL useDarkMode = ThemeManager::instance()->useDarkMode() ? TRUE : FALSE;
     DwmSetWindowAttribute(hwnd,
                           20,  // DWMWA_USE_IMMERSIVE_DARK_MODE
                           &useDarkMode,

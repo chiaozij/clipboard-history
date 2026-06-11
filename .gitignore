@@ -28,3 +28,6 @@ Desktop.ini
 
 # 计划文件
 plan.md
+
+# Release 打包产物
+release/

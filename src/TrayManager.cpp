@@ -9,6 +9,7 @@
 #include "TrayManager.h"
 #include "HistoryPanel.h"
 #include "ClipboardManager.h"
+#include "ThemeManager.h"
 
 #include <QApplication>
 #include <QAbstractButton>
@@ -73,31 +74,8 @@ void TrayManager::showNotification(const QString &title, const QString &message)
 
 void TrayManager::createTrayMenu()
 {
-    // 使用自定义样式让菜单与应用风格一致
-    m_trayMenu->setStyleSheet(
-        "QMenu {"
-        "  background: #2D2D2D;"
-        "  border: 1px solid rgba(255,255,255,0.1);"
-        "  border-radius: 8px;"
-        "  padding: 6px 4px;"
-        "  color: #E8E8E8;"
-        "  font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;"
-        "  font-size: 13px;"
-        "}"
-        "QMenu::item {"
-        "  padding: 8px 28px 8px 14px;"
-        "  border-radius: 6px;"
-        "  margin: 2px 4px;"
-        "}"
-        "QMenu::item:selected {"
-        "  background: rgba(255,255,255,0.12);"
-        "}"
-        "QMenu::separator {"
-        "  height: 1px;"
-        "  background: rgba(255,255,255,0.08);"
-        "  margin: 4px 8px;"
-        "}"
-    );
+    // 使用主题感知的菜单样式
+    m_trayMenu->setStyleSheet(ThemeManager::instance()->menuStyle());
 
     // —— 菜单项 ——
 
@@ -106,6 +84,22 @@ void TrayManager::createTrayMenu()
             this, &TrayManager::onShowPanelAction);
 
     m_trayMenu->addSeparator();
+
+    // — "切换主题" 菜单项 —
+    QAction *themeAction = m_trayMenu->addAction("🎨 切换主题");
+    connect(themeAction, &QAction::triggered, this, [this]() {
+        ThemeManager::Theme current = ThemeManager::instance()->currentTheme();
+        ThemeManager::Theme next = (current == ThemeManager::Dark)
+                                   ? ThemeManager::Light
+                                   : ThemeManager::Dark;
+        ThemeManager::instance()->setTheme(next);
+
+        // 刷新托盘菜单样式
+        m_trayMenu->setStyleSheet(ThemeManager::instance()->menuStyle());
+
+        QString themeName = (next == ThemeManager::Light) ? "浅色" : "暗色";
+        showNotification("主题已切换", "当前主题：" + themeName);
+    });
 
     m_clearAction = m_trayMenu->addAction("🗑 清空所有记录");
     connect(m_clearAction, &QAction::triggered,
@@ -163,22 +157,7 @@ void TrayManager::onClearHistoryAction()
     msgBox.button(QMessageBox::No)->setText("取消");
 
     // 对话框样式
-    msgBox.setStyleSheet(
-        "QMessageBox {"
-        "  background-color: #2D2D2D;"
-        "  color: #E8E8E8;"
-        "  font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;"
-        "}"
-        "QMessageBox QLabel { color: #E8E8E8; }"
-        "QPushButton {"
-        "  background: rgba(255,255,255,0.1);"
-        "  border: 1px solid rgba(255,255,255,0.15);"
-        "  border-radius: 6px;"
-        "  padding: 6px 20px;"
-        "  color: #E8E8E8;"
-        "}"
-        "QPushButton:hover { background: rgba(255,255,255,0.2); }"
-    );
+    msgBox.setStyleSheet(ThemeManager::instance()->dialogStyle());
 
     if (msgBox.exec() == QMessageBox::Yes) {
         m_clipboardManager->clearHistory();
@@ -203,22 +182,7 @@ void TrayManager::onAboutAction()
     );
     msgBox.setIcon(QMessageBox::Information);
 
-    msgBox.setStyleSheet(
-        "QMessageBox {"
-        "  background-color: #2D2D2D;"
-        "  color: #E8E8E8;"
-        "  font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;"
-        "}"
-        "QMessageBox QLabel { color: #E8E8E8; }"
-        "QPushButton {"
-        "  background: rgba(255,255,255,0.1);"
-        "  border: 1px solid rgba(255,255,255,0.15);"
-        "  border-radius: 6px;"
-        "  padding: 6px 20px;"
-        "  color: #E8E8E8;"
-        "}"
-        "QPushButton:hover { background: rgba(255,255,255,0.2); }"
-    );
+    msgBox.setStyleSheet(ThemeManager::instance()->dialogStyle());
 
     msgBox.exec();
 }
